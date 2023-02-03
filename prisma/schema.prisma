@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -27,4 +27,42 @@ model PasswordReset {
   created_at DateTime @default(now())
 
   @@map("password_resets")
+}
+
+// model Collection {
+//   id         String   @id @default(cuid())
+//   created_at DateTime @default(now())
+//   updated_at DateTime @updatedAt
+
+//   // 
+//   label String
+
+//   label String
+
+//   @@map("diffables")
+// }
+
+model Diffable {
+  id               String          @id @default(cuid())
+  created_at       DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+  label            String
+  identifier       String
+  diffable_entries DiffableEntry[]
+
+  @@index([identifier])
+  @@map("diffables")
+}
+
+model DiffableEntry {
+  id          String   @id @default(cuid())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  entry_at    DateTime @default(now())
+  diffable_id String
+  diffable    Diffable @relation(fields: [diffable_id], references: [id], onDelete: Cascade)
+  content     Json?
+
+  @@index([entry_at])
+  @@map("diffable_entries")
 }

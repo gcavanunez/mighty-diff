@@ -16,7 +16,7 @@ export const useAuth = ({ middleware, redirectIfAuthenticated }: HookProps) => {
     error,
     isLoading,
   } = trpc.auth.getUser.useQuery(undefined, {
-    staleTime: 1000,
+    // staleTime: 1000,
     refetchOnWindowFocus: false,
     retry: false,
   });

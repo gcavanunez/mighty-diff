@@ -247,6 +247,12 @@ export default function JetNavigation() {
               >
                 Dashboard
               </JetNavigationLink>
+              <JetNavigationLink
+                href={"/dashboard/diffables"}
+                active={router.pathname === "/dashboard/diffables"}
+              >
+                Diffables
+              </JetNavigationLink>
             </div>
           </div>
 
