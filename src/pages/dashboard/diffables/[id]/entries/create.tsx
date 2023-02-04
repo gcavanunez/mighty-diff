@@ -37,9 +37,11 @@ const ContentBlock = () => {
     // event.stopPropagation();
     // event.preventDefault();
     if (event.currentTarget.files?.length) {
+      console.log(event.currentTarget.files[0]);
       const file = event.currentTarget.files[0];
 
       if (file) {
+        const csvAsText = await file.text();
         updateRaw(csvAsText);
       }
     }
