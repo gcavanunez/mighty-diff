@@ -18,6 +18,15 @@ export const FormInput: React.FC<
     {...props}
   />
 );
+export const FormTextarea: React.FC<
+  React.InputHTMLAttributes<HTMLTextAreaElement>
+> = ({ disabled = false, className = "", ...props }) => (
+  <textarea
+    disabled={disabled}
+    className={`${className} rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50`}
+    {...props}
+  />
+);
 
 export const FormInputError = ({
   messages = [],

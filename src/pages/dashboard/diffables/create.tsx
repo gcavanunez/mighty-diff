@@ -33,11 +33,10 @@ const ProfileInformationSection = () => {
       <div className="shadow sm:overflow-hidden sm:rounded-md">
         <div className="grid grid-cols-3 gap-x-12 bg-white py-6 px-4 sm:p-6">
           <div>
-            <h1 className="text-lg font-medium text-gray-900">
-              Profile Information
-            </h1>
+            <h1 className="text-lg font-medium text-gray-900">Diffable</h1>
             <p className="mt-1 text-sm text-gray-600">
-              Update your account's profile information and email address.
+              create an diffable entity you want to start manually tracking
+              overtime
             </p>
           </div>
           <div className="col-span-2">

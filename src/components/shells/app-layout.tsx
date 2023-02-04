@@ -143,7 +143,7 @@ const AppLayout: React.FC<
         </header>
       )}
       {/* Page Content */}
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="flex flex-1 flex-col bg-slate-100">{children}</main>
     </div>
   );
 };

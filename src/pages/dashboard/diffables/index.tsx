@@ -4,16 +4,6 @@ import { trpc } from "@/utils/trpc";
 import Head from "next/head";
 import Link from "next/link";
 
-const people = [
-  {
-    name: "Lindsay Walton",
-    title: "Front-end Developer",
-    email: "lindsay.walton@example.com",
-    role: "Member",
-  },
-  // More people...
-];
-
 function Table() {
   const { data } = trpc.diffables.index.useQuery();
   return (

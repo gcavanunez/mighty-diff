@@ -25,8 +25,9 @@ const Page = () => {
           remember,
         },
         {
-          onSuccess: () => {
-            router.push("/dashboard");
+          onSuccess: ({ redirectPath }) => {
+            console.log(redirectPath);
+            router.push(redirectPath);
           },
         }
       );

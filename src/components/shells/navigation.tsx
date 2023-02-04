@@ -105,8 +105,9 @@ const UserDropdown = ({
                     {({ active }) => (
                       <JetDropdownLink
                         href="/dashboard/profile"
-                        active={active}
+                        isAlive={active}
                       >
+                        {/* isAlive={active} */}
                         Settings
                       </JetDropdownLink>
                     )}
@@ -138,13 +139,17 @@ const UserDropdown = ({
 };
 
 interface Props extends LinkProps {
+  isAlive?: boolean;
   className?: Pick<HTMLAttributes<HTMLAnchorElement>, "className">;
 }
 
 const JetDropdownLink = forwardRef<
   React.ElementRef<typeof Link>,
   PropsWithChildren<Props>
->(function JetDropdownLinkFunc({ className, children, ...props }, ref) {
+>(function JetDropdownLinkFunc(
+  { className, children, isAlive, ...props },
+  ref
+) {
   return (
     <Link
       ref={ref}
@@ -152,7 +157,7 @@ const JetDropdownLink = forwardRef<
       className={classNames(
         "block px-4 py-2 text-sm leading-5 text-gray-700 transition duration-150 ease-in-out  focus:outline-none",
         className,
-        props.active ? "bg-gray-100" : "hover:bg-gray-100 focus:bg-gray-100"
+        isAlive ? "bg-gray-100" : "hover:bg-gray-100 focus:bg-gray-100"
       )}
     >
       {children}

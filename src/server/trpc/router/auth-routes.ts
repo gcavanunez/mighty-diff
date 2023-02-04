@@ -6,6 +6,8 @@ import { router, publicProcedure, BadReqTRPCError } from "../trpc";
 import { getServerAuthSession } from "@/server/common/get-server-auth-session";
 import { getBaseUrl } from "@/utils/trpc";
 import { SendEmail } from "@/server/actions/send-forgot-password-email";
+import { setCookie } from "@/utils/cookie-utils";
+
 const lessThanOneHourAgo = (date: number) => {
   const HOUR = 1000 * 60 * 60;
   const anHourAgo = Date.now() - HOUR;
@@ -27,6 +29,7 @@ export const authRouter = router({
           email: input.email,
         },
       });
+      let redirectPath = "/dashboard";
 
       if (!user) {
         // throw new TRPCError({ code: "BAD_REQUEST", cause: "User not found" });
@@ -51,9 +54,20 @@ export const authRouter = router({
         ctx.session["user"] = { id: user.id };
         await ctx.session.save();
       }
-
+      const wantedPath = ctx.request.cookies["wanted-url"];
+      if (wantedPath) {
+        redirectPath = wantedPath;
+        // todo: remove cookie
+        // ctx.response.cookies.delete('nextjs')
+        setCookie("wanted-url", "", {
+          res: ctx.response,
+          req: ctx.request,
+          maxAge: -1,
+        });
+      }
       return {
         user,
+        redirectPath,
       };
     }),
   register: publicProcedure
