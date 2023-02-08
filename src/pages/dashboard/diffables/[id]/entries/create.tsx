@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { zonedTimeToUtc } from "date-fns-tz";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { AppButton } from "@/components/app-button";
 import {
   FormInput,
@@ -9,14 +10,25 @@ import {
 import { getLayout } from "@/components/shells/app-layout";
 import { trpc } from "@/utils/trpc";
 import Head from "next/head";
-import type { FormEvent, FocusEvent } from "react";
+import type { FormEvent, FocusEvent, ChangeEvent, Dispatch } from "react";
 import { useRouter } from "next/router";
 import * as Papa from "papaparse";
 import { nanoid } from "nanoid";
-import type { entryShapes } from "@/utils/zod-shapes";
+import type { entryShapes, Json } from "@/utils/zod-shapes";
 import type { z } from "zod";
+// import { DatePicker, Provider, defaultTheme } from "@adobe/react-spectrum";
 
-const ContentBlock = () => {
+function myTz() {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
+const ContentBlock = ({
+  rowId,
+  setFormState,
+}: {
+  rowId: string;
+  setFormState: SetRowState;
+}) => {
   const [raw, setRaw] = useState({});
   const inputFile = useRef<HTMLInputElement | null>(null);
   const parseCsv = () => {
@@ -27,6 +39,11 @@ const ContentBlock = () => {
   const updateRaw = (text: string) => {
     const data = Papa.parse(text, { header: true });
     setRaw(data);
+
+    const json = data.data as Json;
+    setFormState(rowId, {
+      data: json,
+    });
   };
   const parseChunk = (event: FocusEvent<HTMLTextAreaElement>) => {
     if (event.currentTarget.value) {
@@ -90,9 +107,11 @@ const ContentBlock = () => {
 const EntryKey = ({
   rowId,
   removeKey,
+  setFormState,
 }: {
   rowId: string;
   removeKey: () => void;
+  setFormState: SetRowState;
 }) => {
   return (
     <li className="p-1" data-draggable="true">
@@ -160,6 +179,9 @@ const EntryKey = ({
                   autoFocus
                   type="text"
                   name="key"
+                  onChange={(e) => {
+                    setFormState(rowId, { key: e.currentTarget.value.trim() });
+                  }}
                   className="mt-1 block w-full"
                   required
                 />
@@ -168,7 +190,7 @@ const EntryKey = ({
           </div>
           <div className="mt-2 border-l border-gray-200 p-4">
             <div className="mt-1">
-              <ContentBlock />
+              <ContentBlock rowId={rowId} setFormState={setFormState} />
             </div>
           </div>
         </div>
@@ -182,34 +204,54 @@ type KeyType = {
 };
 
 type EntryForm = z.infer<typeof entryShapes.create>;
+// type SetFormState = Dispatch<Partial<EntryForm>>;
+type SetRowState = (
+  rowId: string,
+  data: Partial<{
+    key: string;
+    data: Json;
+  }>
+) => void;
+
 const FormSection = () => {
   const router = useRouter();
-  const [formState, setFormState] = useState<EntryForm>({
-    entry_at: "",
-    diffable_id: "",
-    content: [],
-  });
-
-  useEffect(() => {
-    console.log("id =>", router.query.id);
-    setFormState((prev) => {
-      return {
-        ...prev,
-        diffable_id: String(router.query.id),
+  const [formState, setFormState] = useReducer(
+    (state: EntryForm, partialState: Partial<EntryForm>) => {
+      const nextState = {
+        ...state,
+        ...partialState,
       };
-    });
-  }, [router.query.id]);
+      return nextState;
+    },
+    {
+      entry_at: "",
+      diffable_id: "",
+      content: [],
+    }
+  );
 
   const { isLoading, mutate, error } = trpc.entries.create.useMutation();
 
   const [keys, setKeys] = useState<KeyType[]>([]);
   const removeKey = (key: KeyType) => {
+    const elementPos = keys.map((x) => x.id).indexOf(key.id);
+    // const elementPos = keys.findIndex(x=> x.id === key.id);
+
     const filteredSet = keys.filter((row) => row.id !== key.id);
+    const filteredContent = formState.content.filter(
+      (row, index) => index !== elementPos
+    );
+    setFormState({
+      content: filteredContent,
+    });
     setKeys(filteredSet);
   };
 
   const addNewKey = () => {
     setKeys((prev) => [...prev, { id: nanoid() }]);
+    setFormState({
+      content: [...formState.content, { key: "", data: {} }],
+    });
   };
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -220,6 +262,37 @@ const FormSection = () => {
       },
     });
   };
+  const onChangeEntryAt = (e: ChangeEvent<HTMLInputElement>) => {
+    const entry_at = zonedTimeToUtc(
+      e.currentTarget.value,
+      myTz()
+    ).toISOString();
+    setFormState({
+      entry_at,
+    });
+  };
+
+  const setRowState: SetRowState = (rowId, data) => {
+    const elementPos = keys.findIndex((x) => x.id === rowId);
+    const content = formState.content.map((lilData, index) => {
+      if (elementPos !== index) {
+        return lilData;
+      }
+      return { ...lilData, ...data };
+    });
+    setFormState({
+      content,
+    });
+  };
+
+  useEffect(() => {
+    setFormState({
+      diffable_id: String(router.query.id),
+    });
+  }, [router.query.id]);
+  useEffect(() => {
+    console.log(formState);
+  }, [formState.entry_at]);
   return (
     <form onSubmit={onSubmit}>
       <div className="w-full bg-white shadow sm:overflow-hidden sm:rounded-lg">
@@ -238,16 +311,19 @@ const FormSection = () => {
         <div className="border-t border-gray-200 px-3 py-4 sm:px-5">
           <div className="max-w-md">
             <FormLabel htmlFor="label">Time stamp</FormLabel>
-            <FormInput
-              id="label"
-              autoFocus
-              type="text"
-              name="label"
-              className="mt-1 block w-full"
-              required
-            />
+            <div className="flex gap-4">
+              <FormInput
+                id="label"
+                autoFocus
+                type="datetime-local"
+                name="label"
+                onChange={onChangeEntryAt}
+                className="mt-1 block w-full"
+                required
+              />
+            </div>
             <FormInputError
-              messages={error?.data?.zodError?.fieldErrors["label"] || []}
+              messages={error?.data?.zodError?.fieldErrors["entry_at"] || []}
               className="mt-2"
             />
           </div>
@@ -268,6 +344,7 @@ const FormSection = () => {
                   key={row.id}
                   removeKey={() => removeKey(row)}
                   rowId={row.id}
+                  setFormState={setRowState}
                 />
               ))}
           </ul>
@@ -319,7 +396,9 @@ const Dashboard = () => {
 
       <div className="py-12">
         <div className="mx-auto max-w-7xl space-y-8 sm:px-6 lg:px-8">
+          {/* <Provider theme={defaultTheme}> */}
           <FormSection />
+          {/* </Provider> */}
         </div>
       </div>
     </>

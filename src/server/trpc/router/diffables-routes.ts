@@ -19,6 +19,9 @@ export const diffablesRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const diffable = await ctx.prisma.diffable.findFirst({
+        include: {
+          diffable_entries: true,
+        },
         where: {
           id: input.id,
         },
